@@ -9,7 +9,7 @@ class Solid():
 class Enemy(Solid):
     char = '+'
 
-
+'''asdasdasdsadasdasda'''
 
 class Path():
     char = '.'
