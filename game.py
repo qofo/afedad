@@ -4,15 +4,8 @@ import time
 import threading
 
 
-class Thread(threading.Thread):#########안 
-    def run(self):
-        if screen.textline != []:
-            print(self.is_alive())
-            time.sleep(2)
-            screen.remove_text()
-            return 0
-        else:
-            print('no')
+class System:
+    pass
        
 class Solid:
     pass
@@ -71,17 +64,15 @@ class Screen:
         
     def draw_text(self, text):
         self.textline.append(text)
-        print(self.textline)
+        ###print(self.textline)
         for i, s in enumerate(text):
             libtcod.console_put_char(con, i, len(self.textline)-1, s, libtcod.BKGND_NONE)
-        #libtcod.console_blit(con, 0, 0, screen.width, screen.height+10, 0, 0, 0)
-        #libtcod.console_flush()
     def remove_text(self):
         if self.textline != []:
             for i in range(30):
                 libtcod.console_put_char(con, i, len(self.textline)-1, ' ', libtcod.BKGND_NONE)
             self.textline.pop()
-            print(self.textline)
+            ####print(self.textline)
         
 
 class Entity(Solid):
@@ -113,12 +104,16 @@ class Entity(Solid):
 class Enemy(Entity):
     char = '+'
 
-
+class Room():
+    pass
 
 
 def main():
 
+    global system
+    system = System()
     #GUI설정
+    
     global screen
     screen = Screen(80, 50)
     
