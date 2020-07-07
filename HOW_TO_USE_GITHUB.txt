@@ -1,6 +1,5 @@
 문서 내에서 우클릭 후 Git Bash Here
 
-git bash에서 
 git add .
 git commit -m "something"
 git push
