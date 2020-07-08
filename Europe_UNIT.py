@@ -13,7 +13,7 @@ class Europe_LongSword_Man(UNIT):
         self.__defensive_power = 5
         self.__speed = 1
         self.__image = None
-        self.__range = 1
+        self.__range = 2
 
         
 
