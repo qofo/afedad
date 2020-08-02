@@ -4,6 +4,8 @@ import time
 import threading
 import random
 
+import sample
+
 
 class System:
     pass
@@ -22,16 +24,25 @@ class Nothing:
 
 
 class Wall(Solid):
-    pass
+    def __init__(self, char):
+        self.char = char
 
 
 class Room:
-    def __init__(self,x, y):
+    def __init__(self,x, y, width, height):
         self.x = x
         self.y = y
-        self.width = random.randint(5,10)
-        self.height = random.randint(5,10)
         
+        self.width = width
+        self.height = height
+    
+        self.stage = [(i, j) for i in range(x, x+self.width) for j in range(y, y+self.height)]
+        for i in range(self.width):
+            screen.room[y][x+i] = Wall('_')
+            screen.room[y+self.height-1][x+i] = Wall('-')
+        for j in range(1,self.height-1):
+            screen.room[y+j][x] = Wall('|')
+            screen.room[y+j][x+self.width-1] = Wall('|')
         
 
 
@@ -40,7 +51,7 @@ class Item:
 
 
 class Screen:
-    def __init__(self):
+    def __init__(self, width, height):
         self.width = width
         self.height = height
         self.textline = []
@@ -51,10 +62,15 @@ class Screen:
     def draw(self, player, left, right, up, down):
         libtcod.console_set_default_foreground(con, libtcod.white)
         
-        #그리기
+        #시야 기준 맵 그리기
         for i in range(down, up):
             for j in range(left, right):
                 libtcod.console_put_char(con, j, i+5, self.room[i][j].char, libtcod.BKGND_NONE)
+        #상태창 그리기
+        status_text = show_status(player).split()
+        for i in range(len(status_text)):
+            for j in range(len(status_text[i])):
+                libtcod.console_put_char(con, i*10 + j, self.height+5, status_text[i][j], libtcod.BKGND_NONE)
                 
         libtcod.console_blit(con, 0, 0, self.width, self.height+10, 0, 0, 0)
         #This is the part that presents everything on the screen. Pretty straightforward
@@ -90,7 +106,11 @@ class Entity(Solid):
         self.y = y
         self.ex_object = screen.room[y][x]
         screen.room[y][x] = self
-    hp = 10
+        self.max_hp = 10
+        self.hp = self.max_hp
+        self.str = 1
+        self.defence = 1
+        self.exp = 0
 
     def move(self, dx, dy):
         
@@ -113,12 +133,38 @@ class Enemy(Entity):
 
 
 def generate_stage(width, height):
-    stage = [(i, j) for i in range(width) for j in range(height)]
-    room_number = random.randint(3, 6)
+    stage = [[1 for i in range(width)] for j in range(height)]
+    print(stage[height-1][width-1])
+    room_number = random.randint(3, 8)
     room = [[] for i in range(room_number)]
-    for i in range(room_number):
-        x, y = random.choice(stage)
+    
+    k = 0
+    while room[-1] == []:
+        check = 1
+        (x, y) = (random.randint(0, width-15), random.randint(0, height-15))
+        (room_width, room_height) = (random.randint(8, 15), random.randint(8, 15))
+        for i in range(y, y+room_height):
+            for j in range(x, x+room_width):
+                if stage[i][j] == 0: check = 0
+                
+        if check == 1:
+            for i in range(y, y+room_height):
+                for j in range(x, x+room_width):
+                    stage[i][j] = 0
+            room[k] = Room(x, y, room_width-3, room_height-3)
+            k += 1
+    return room
         
+def show_status(player):
+    text = '''
+Stage:{}
+Coin:{}
+HP:{}/{}
+Str:{}
+Def:{}
+Exp:{}
+'''.format(1, 0, player.hp,player.max_hp, player.str, player.defence, player.exp)
+    return text
 
 
 def main():
@@ -128,10 +174,10 @@ def main():
     #GUI설정
     global screen
     screen = Screen(60, 40)
-
-    #Entity.move 함수 테스트
-    for i in range(40):
-        Enemy(i, i, '+')
+    
+    room = generate_stage(60, 40)
+    '''for i in range(40):
+        Enemy(i, i, '+')'''
         
     #폰트를 지정한 png파일로 바꾸기
     libtcod.console_set_custom_font("arial10x10.png", libtcod.FONT_TYPE_GREYSCALE | libtcod.FONT_LAYOUT_TCOD)
@@ -170,9 +216,10 @@ def main():
         if player.y > screen.height - 11: up = screen.height
         else: up = player.y + 10
         
+        
         #화면에 그리기
-        ##screen.draw(player, left, right, up, down)
-        screen.draw(player, 0, screen.width, screen.height, 0)
+        screen.draw(player, left, right, up, down)
+        ##screen.draw(player, 0, screen.width, screen.height, 0)
         
         
         #텍스트 삭제
