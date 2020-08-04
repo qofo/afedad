@@ -39,6 +39,9 @@ class Wall(Solid):
     def __init__(self, char):
         self.char = char
 
+class Door():
+    def __init__(self):
+        self.char = '+'
 
 class Room:
     def __init__(self,x, y, width, height):
@@ -55,6 +58,9 @@ class Room:
         for j in range(1,self.height-1):
             screen.room[y+j][x] = Wall('|')
             screen.room[y+j][x+self.width-1] = Wall('|')
+        door_x = random.randint(self.x+1, self.x+self.width-2)
+        door_y = random.randint(self.y+1, self.y+self.height-2)
+        screen.room[door_y][door_x] = Door()
         
 
 
@@ -117,7 +123,7 @@ class Screen:
         
 
 class Entity(Solid):
-    def __init__(self, x, y, char): 
+    def __init__(self, x, y, char, name): 
         self.char = char
         
         self.x = x 
@@ -129,27 +135,37 @@ class Entity(Solid):
         self.str = 1
         self.defence = 1
         self.exp = 0
+        self.name = name
 
     def move(self, dx, dy):
-        
         if self.x + dx > screen.width-1 or self.x + dx < 0:
             dx = 0
-        if self.y + dy > screen.height-1 or self.y + dy < 0:
+        elif self.y + dy > screen.height-1 or self.y + dy < 0:
             dy = 0
-        if isinstance(screen.room[self.y+dy][self.x+dx],Solid):
-            screen.draw_text("You can't move there")
-        else:
+        elif not isinstance(screen.room[self.y+dy][self.x+dx],Solid):
             screen.room[self.y][self.x] = self.ex_object
             self.x += dx
             self.y += dy
             self.ex_object = screen.room[self.y][self.x]
             screen.room[self.y][self.x] = self
 
+    def attack(self, target):
+        screen.draw_text("{} hits {}".format(self.name, target.name))
 
+class Player(Entity):
+    def move(self, dx, dy):
+        if self.x + dx > screen.width-1 or self.x + dx < 0:
+            dx = 0
+        elif self.y + dy > screen.height-1 or self.y + dy < 0:
+            dy = 0
+        elif isinstance(screen.room[self.y+dy][self.x+dx],Solid):
+            screen.draw_text("You can't move there")
+
+        super().move(dx, dy)
         
 class Enemy(Entity):
-    def __init__(self,x,y,char):
-        super().__init__(x,y,char)
+    def __init__(self,x,y,char, name):
+        super().__init__(x,y,char, name)
         system.unit.append(self)
     
     def act(self, player):
@@ -158,19 +174,32 @@ class Enemy(Entity):
         
     
                 
-    def seek(self, player, sight):
-        if (player.x, player.y) in sight:
-            print(8)
-            dx = player.x - self.y
-            dy = player.y - self.y
-            a = random.randint(0, abs(dx)+abs(dy))
-        
-            if a < abs(dx):
-                print(dx//abs(dx))
-                self.move(dx//abs(dx), 0)
-            else:
-                print(dy//abs(dy))
-                self.move(0, dy//abs(dy))
+    def seek(self, target, sight):
+        if (target.x, target.y) in sight:
+            dx = target.x - self.x
+            dy = target.y - self.y
+            q = 0
+            while q == 0:
+                a = random.randint(-abs(dx), abs(dy))
+                if (dy == 0 and abs(dx) == 1) or (dx == 0 and abs(dy) == 1):
+                    self.attack(target)
+                    q = 1
+                elif a < 0:
+                    k = dx//abs(dx)
+                    if isinstance(screen.room[self.x+k][self.y], Solid):
+                        print(a,6)
+                        continue
+                    else:
+                        self.move(k, 0)
+                        q = 1
+                elif a > 0:
+                    k = dy//abs(dy)
+                    if isinstance(screen.room[self.x][self.y+k], Solid):
+                        print(a,7)
+                        continue
+                    else:
+                        self.move(0, k)
+                        q = 1
 
 def show_sight(x, y, sight):
     if x < 10: left = 0                                                  
@@ -183,6 +212,13 @@ def show_sight(x, y, sight):
     else: up = y + 10
     
     return left, right, up, down
+
+def check_actable(x, y, dx, dy):
+    if x + dx > screen.width-1 or x + dx < 0:
+            dx = 0
+    elif y + dy > screen.height-1 or y + dy < 0:
+            dy = 0
+    return (dx, dy)
 
 def generate_stage(width, height):
     
@@ -229,8 +265,8 @@ def main():
     screen = Screen(60, 40)
     
     room = generate_stage(60, 40)
-    for i in range(10):
-        Enemy(i+20, i+20, '+')
+    for i in range(1):
+        Enemy(i+20, i+20, 'E', "enemy")
         
     #폰트를 지정한 png파일로 바꾸기
     libtcod.console_set_custom_font("arial10x10.png", libtcod.FONT_TYPE_GREYSCALE | libtcod.FONT_LAYOUT_TCOD)
@@ -238,7 +274,7 @@ def main():
     libtcod.console_init_root(screen.width, screen.height+10, "qqqqqqqqqq", False)
 
     #객체 설정
-    player = Entity(5, 3, '@')
+    player = Player(5, 3, '@', "player")
 
     #새로운 콘솔창 만들기
     global con
@@ -269,8 +305,8 @@ def main():
         
         
         #화면에 그리기
-        screen.draw(player, player_sight)
-        ##screen.draw(player, 0, screen.width, screen.height, 0)
+        ##screen.draw(player, player_sight)
+        screen.draw(player, (0, screen.width, screen.height, 0))
 
         #유닛 동작
         '''for unit in system.unit:
